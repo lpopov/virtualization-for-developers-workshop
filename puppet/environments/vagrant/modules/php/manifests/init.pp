@@ -4,10 +4,12 @@ class php {
              'php5-cli',
              'libapache2-mod-php5',
              'php5-mysql',
+             'php5-mysqlnd',
              'php5-sqlite',
              'php5-tidy',
              'php5-xdebug']:
-    ensure => present;
+    ensure => present,
+    notify  => Service['apache2'],
   }
 
   file {  '/etc/php5/apache2':
