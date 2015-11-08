@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="en">
+
+	<head>
+		<meta charset="utf-8">
+
+		<title>Virtualized Development Environments with Vagrant and Puppet</title>
+
+		<meta name="description" content="Virtualized Development Environments with Vagrant and Puppet">
+		<meta name="author" content="Lyubomir Popov">
+
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<link rel="stylesheet" href="css/reveal.min.css">
+        <link rel="stylesheet" href="css/theme/solarized.css" id="theme">
+
+		<!-- For syntax highlighting -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<!-- If the query includes 'print-pdf', include the PDF print sheet -->
+		<script>
+			if( window.location.search.match( /print-pdf/gi ) ) {
+				var link = document.createElement( 'link' );
+				link.rel = 'stylesheet';
+				link.type = 'text/css';
+				link.href = 'css/print/pdf.css';
+				document.getElementsByTagName( 'head' )[0].appendChild( link );
+			}
+		</script>
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+			<!-- Any section element inside of this container is displayed as a slide -->
+			<div class="slides">
+				<section>
+					
+                    <h1>Virtualization</h1>
+                    <h2>for developers</h2>
+					<p>
+                        <small><a href="https://github.com/lpopov">Lyubomir Popov</a> / <a href="http://twitter.com/lpopov">@lpopov</a></small>
+					</p>
+                    <p>
+                        <img src="img/openfest-logo.png" alt="openfest-logo"/>
+					</p>
+				</section>
+
+                <section>
+                    <h2>Reasons to virtualize</h2>
+                    <ul>
+						<li>Multiple projects depending on different kinds of software</li>
+						<li>Multiple projects depending on different versions of the same software</li>
+						<li>Decreases setup time for a new developer joining the project</li>
+                        <li>Increases chances of successful deployments by mirroring production environment</li>
+                        <li>Reuse Puppet recipes in production and development environments</li>
+                        <li>'Works on my machine' syndrome</li>
+					</ul>
+				</section>
+                
+				<section>
+					<h2>What is Vagrant?</h2>
+                    <ul>
+						<li>Command line tool written by Mitchell Hashimoto</li>
+						<li>Automates VM creation with Virtualbox, VMware, AWS, Digital Ocean</li>
+						<li>Integrates with provisioning tools like shell scripts, Chef, Puppet and Ansible</li>
+                        <li>Runs on Linux, Mac OS X and Windows</li>
+					</ul>
+				</section>
+                
+                <section>
+					<h2>Why use Vagrant?</h2>
+                    <ul>
+						<li>You can create VMs quickly and easily</li>
+						<li>You can reproduce exactly the same environment on different systems</li>
+						<li>You need to keep only a small number of text files, to recreate an environment</li>
+					</ul>
+				</section>
+                
+                <section>
+					<h2>Vagrant commands</h2>
+                    <pre><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;">
+$ vagrant init user/box   # Create Vagrantfile for specified base box
+$ vagrant up              # Create a VM if needed and boot
+$ vagrant reload          # After every change to Vagrantfile
+$ vagrant halt            # Turns off the VM
+$ vagrant destroy         # Deletes the VM
+$ vagrant suspend         # Suspends the VM
+$ vagrant resume          # Resumes the VM
+$ vagrant ssh             # Log in using ssh
+$ vagrant status          # Status of the VM
+                    </code></pre>
+				</section>
+                
+                <section>
+					<h2>Getting up and running</h2>
+                    <p>Install Vagrant and Virtualbox </p>
+                    <p>(<a href='http://www.vagrantup.com/'>www.vagrantup.com</a> and <a href='https://www.virtualbox.org/'>www.virtualbox.org</a>)</p>
+                    <pre><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;">
+$ vagrant init puppetlabs/ubuntu-14.04-64-puppet
+$ vagrant up 
+$ vagrant ssh
+                    </code></pre>
+				</section>
+
+				<section>
+                    <section>
+                        <h2>Vagrantfile</h2>
+                        <ul>
+                            <li>Network configuration</li>
+                            <li>Port forwarding</li>
+                            <li>Shared folders</li>
+                            <li>VM configuration (RAM, CPU, Threads)</li>
+                            <li>Provisioner setup</li>
+                        </ul>
+                    </section>
+                    <section>
+						<h2>Vagrantfile</h2>
+                        <p>Created with 'vagrant init puppetlabs/ubuntu-14.04-64-puppet'</p>
+						<pre><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;">
+VAGRANTFILE_API_VERSION = "2"
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  config.vm.box = "puppetlabs/ubuntu-14.04-64-puppet"
+end
+                        </code></pre>
+					</section>
+					<section>
+						<h2>Vagrantfile</h2>
+                        <p>Adding networking</p>
+						<pre><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;">
+VAGRANTFILE_API_VERSION = "2"
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  config.vm.box = "puppetlabs/ubuntu-14.04-64-puppet"
+  <font color="#00FF00">config.vm.network "private_network", ip: "10.0.1.10"</font>
+end
+                        </code></pre>
+					</section>
+					<section>
+						<h2>Vagrantfile</h2>
+                        <p>Port forwarding</p>
+						<pre><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;">
+VAGRANTFILE_API_VERSION = "2"
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  config.vm.box = "puppetlabs/ubuntu-14.04-64-puppet"
+  config.vm.network "private_network", ip: "10.0.1.10"
+  <font color="#00FF00">config.vm.network "forwarded_port", guest: 80, host: 8080</font>
+end
+                        </code></pre>
+					</section>
+                    <section>
+						<h2>Vagrantfile</h2>
+                        <p>Shared folders</p>
+						<pre><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;">
+VAGRANTFILE_API_VERSION = "2"
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  config.vm.box = "puppetlabs/ubuntu-14.04-64-puppet"
+  config.vm.network "private_network", ip: "10.0.1.10"
+  config.vm.network "forwarded_port", guest: 80, host: 8080
+  <font color="#00FF00">config.vm.synced_folder "./", "/vagrant"</font>
+end
+                        </code></pre>
+					</section>
+                    <section>
+						<h2>Vagrantfile</h2>
+                        <p>VM configuration (RAM, CPU, Network)</p>
+						<pre><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;">
+  ...
+  config.vm.box = "puppetlabs/ubuntu-14.04-64-puppet"
+  config.vm.network "private_network", ip: "10.0.1.10"
+  config.vm.network "forwarded_port", guest: 80, host: 8080
+  config.vm.synced_folder "./", "/vagrant"
+  <font color="#00FF00">config.vm.provider :virtualbox do |vb|
+    # vb.customize ["startvm", :id, "--type", "gui"]
+    vb.customize ["modifyvm", :id, "--memory", "512"]
+    vb.customize ["modifyvm", :id, "--cpus", "1"]
+    vb.customize ["modifyvm", :id, "--hwvirtex", "on"]
+    vb.customize ["modifyvm", :id, "--audio", "none"]
+    vb.customize ["modifyvm", :id, "--nictype1", "virtio"]
+    vb.customize ["modifyvm", :id, "--nictype2", "virtio"]
+  end</font>
+end
+                        </code></pre>
+					</section>
+                    <section>
+						<h2>Vagrantfile</h2>
+                        <p>Provisioner setup</p>
+						<pre><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;">
+  ...
+    vb.customize ["modifyvm", :id, "--audio", "none"]
+    vb.customize ["modifyvm", :id, "--nictype1", "virtio"]
+    vb.customize ["modifyvm", :id, "--nictype2", "virtio"]
+  end
+  
+  <font color="#00FF00">config.vm.provision "puppet" do |puppet|</font>
+    <font color="#999999">#puppet.manifests_path = "puppet/manifests"
+    #puppet.module_path = "puppet/modules"
+    #puppet.manifest_file  = "site.pp"</font>
+    <font color="#00FF00">puppet.environment_path = "puppet/environments"
+    puppet.environment = "vagrant"
+  end</font>
+end
+                        </code></pre>
+					</section>
+				</section>
+
+                <section>
+                    <section>
+                        <h2>What is Puppet?</h2>
+                        <ul>
+                            <li>One of the market leaders in configuration management</li>
+                            <li>Configuration management system that allows you to define the state of your IT infrastructure, then automatically enforces the correct state</li>
+                            <li>Works as well on a single server, as on thousands of physical and virtual machines</li>
+                            <li>Automates tasks that sysadmins often do manually</li>
+                            <li>Ensures consistency, reliability and stability</li>
+                        </ul>
+                    </section>
+                    
+                    <section>
+                        <h2>Puppet Basics</h2>
+                        <ul>
+                            <li>puppet-agent, puppetserver, puppetdb</li>
+                            <li>Resources</li>
+                            <li>Classes</li>
+                            <li>Modules</li>
+                        </ul>
+                    </section>
+                    
+                    <section>
+                        <h2>Puppet Resources</h2>
+                        <h4>Definition:</h4>
+                        <pre><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;">
+                        &lt;TYPE&gt; { '&lt;TITLE&gt;':
+                          &lt;ATTRIBUTE&gt; => &lt;VALUE&gt;,
+                        }    
+                        </code></pre>
+                    </section>
+                    
+                    <section>
+                        <h2>Puppet Resources</h2>
+                        <h4>Special Attributes:</h4>
+                        <ul>
+                            <li>ensure: <font color="#888888">present/absent (may take additional values depending on the resource)</font></li>
+                            <li>before: <font color="#888888">Applies a resource before the target resource</font></li>
+                            <li>require: <font color="#888888">Applies a resource after the target resource</font></li>
+                            <li>notify: <font color="#888888">Applies a resource before the target resource. The target resource refreshes if the notifying resource changes</font></li>
+                            <li>subscribe: <font color="#888888">Applies a resource after the target resource. The subscribing resource refreshes if the target resource changes</font></li>
+                        </ul>
+                    </section>
+                    
+                    <section>
+                        <h2>Puppet Resources</h2>
+                        <h4>Example Part 1:</h4>
+                        <pre><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;">
+    file { 'vagrant-vhost.conf':
+      path    => "/etc/apache2/sites-available/vagrant-vhost.conf",
+      ensure  => file,
+      source  => "puppet:///modules/apache/vagrant-vhost.conf",
+      require => Package['apache2'],
+      notify  => Service['apache2'],
+      owner   => 'root',
+      mode    => '0644',
+    }
+                        </code></pre>
+                    </section>
+                    
+                    <section>
+                        <h2>Puppet Resources</h2>
+                        <h4>Example Part 2:</h4>
+                        <pre><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;">
+    package { 'apache2':
+      ensure => installed,
+      before => File['vagrant-vhost.conf'],
+    }
+    service {'apache2':
+      ensure    => running,
+      subscribe => File['vagrant-vhost.conf'],
+    }    
+    </code></pre>
+                        
+                        Package['ntp'] -> File['/etc/ntp.conf'] ~> Service['ntpd']
+
+                    </section>
+                    
+                    <section>
+                        <h2>Puppet Classes</h2>
+                        <pre><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;"
+>   class apache2 (String $version = 'latest') {
+        file { 'vagrant-vhost.conf':
+          path    => "/etc/apache2/sites-available/vagrant-vhost.conf",
+          ensure  => file,
+          source  => "puppet:///modules/apache/vagrant-vhost.conf",
+          require => Package['apache2'],
+          notify  => Service['apache2'],
+          owner   => 'root',
+          mode    => '0644',
+        }
+        package { 'apache2':
+          ensure => $version,
+          before => File['vagrant-vhost.conf'],
+        }
+        service {'apache2':
+          ensure    => running,
+          subscribe => File['vagrant-vhost.conf'],
+        } 
+    }</code></pre>
+                    </section>
+                    
+                    <section>
+                        <h2>File structure</h2>
+                        <pre><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;">
+$ tree --prune puppet
+puppet
+└── environments
+    └── vagrant
+        ├── manifests
+        │   └── site.pp
+        └── modules
+            ├── apache
+            │   ├── files
+            │   │   └── vagrant-vhost.conf
+            │   └── manifests
+            │       └── init.pp
+            ├── mysql
+            │   └── manifests
+            │       └── init.pp
+            └── php
+                ├── files
+                │   └── php.ini
+                └── manifests
+                    └── init.pp
+
+12 directories, 6 files
+                        </code></pre>
+                    </section> 
+                </section>
+
+                <section>
+					<h3>USB drive directory structure</h3>
+                    <pre><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;">
+.
+├── boxes
+└── packages
+    ├── linux
+    │   ├── packer
+    │   ├── vagrant
+    │   └── virtualbox
+    ├── osx
+    │   ├── packer
+    │   ├── vagrant
+    │   └── virtualbox
+    └── windows
+        ├── packer
+        ├── vagrant
+        └── virtualbox
+                    </code></pre>
+                </section> 
+
+				<section>
+					<h2>Hands-on time</h2>
+                    <ul>
+                        <li>Take a usb drive, copy and install appropriate versions of Vagrant and Virtualbox</li>
+                        <li>Copy 'puppetlabs-ubuntu-14.04-64-puppet.box' box file</li>
+                        <li>Run:</li>
+					</ul>
+                    <pre><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;">
+$ vagrant box add puppetlabs/ubuntu-14.04-64-puppet puppetlabs-ubuntu-14.04-64-puppet.box
+$ git clone https://github.com/lpopov/virtualization-for-developers-workshop.git
+$ cd virtualization-for-developers-workshop
+$ vagrant up
+                    </code></pre>
+				</section>
+
+				<section>
+					<h2>Links (Part 1)</h2>
+					<ul>
+                        <li>Quick creation of Vagrant and Puppet configuration <a href="https://puphpet.com/">https://puphpet.com/</a></li>
+						<li>Base box creation <a href="http://docs.vagrantup.com/v2/boxes/base.html">http://docs.vagrantup.com/v2/boxes/base.html</a></li>
+						<li>Ready boxes <a href="http://www.vagrantbox.es/">http://www.vagrantbox.es/</a></li>
+						<li>Multi-vm configuration <a href="http://docs.vagrantup.com/v2/multi-machine/index.html">http://docs.vagrantup.com/v2/multi-machine/index.html</a></li>
+                        <li>Use on CI server <a href="https://wiki.jenkins-ci.org/display/JENKINS/Vagrant+Plugin">https://wiki.jenkins-ci.org/display/JENKINS/Vagrant+Plugin</a></li>
+                        <li>Extend with plugins <a href="http://docs.vagrantup.com/v2/plugins/index.html">http://docs.vagrantup.com/v2/plugins/index.html</a></li>
+					</ul>
+				</section>
+                
+                <section>
+					<h2>Links (Part 2)</h2>
+					<ul>
+                        <li>Examples of different setups <a href="https://github.com/patrickdlee/vagrant-examples">https://github.com/patrickdlee/vagrant-examples</a></li>
+						<li>Jenkins-CI setup with Vagrant & Puppet <a href="https://github.com/marcojanssen/vagrant-puppet-jenkins">https://github.com/marcojanssen/vagrant-puppet-jenkins</a></li>
+						<li>Vagrant tutorial – Bert Van Vreckem <a href="http://slidedeck.io/bertvv/vagrant-presentation">http://slidedeck.io/bertvv/vagrant-presentation</a></li>
+						<li>Vagrant & Puppet – Cyril Rohr <a href="http://crohr.me/presentations/vagrant-puppet/">http://crohr.me/presentations/vagrant-puppet/</a></li>
+                        <li>Vagrant & Chef – Alan Peabody <a href="http://alanpeabody.com/presentations/vagrant-and-chef">http://alanpeabody.com/presentations/vagrant-and-chef</a></li>
+					</ul>
+				</section>
+                
+				<section>
+					<h1>Thank you</h1>
+				</section>
+
+			</div>
+
+		</div>
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.min.js"></script>
+
+		<script>
+
+			// Full list of configuration options available here:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: true,
+
+				theme: Reveal.getQueryHash().theme, // available themes are in /css/theme
+				transition: Reveal.getQueryHash().transition || 'default', // default/cube/page/concave/zoom/linear/fade/none
+
+				// Parallax scrolling
+				// parallaxBackgroundImage: 'https://s3.amazonaws.com/hakim-static/reveal-js/reveal-parallax-1.jpg',
+				// parallaxBackgroundSize: '2100px 900px',
+
+				// Optional libraries used to extend on reveal.js
+				dependencies: [
+					{ src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: 'plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+					{ src: 'plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } }
+				]
+			});
+
+		</script>
+
+	</body>
+</html>
